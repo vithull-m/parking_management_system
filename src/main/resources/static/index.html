@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ParkFlow - Vehicle Parking Management System</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden"></div>
+
+    <!-- Navigation Header -->
+    <header class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand" onclick="handleBrandClick()">
+                <div class="brand-icon-box">🅿️</div>
+                <div class="brand-text">
+                    <span class="brand-title">Park<span>Flow</span></span>
+                    <span class="brand-subtitle">Smart Vehicle Parking System</span>
+                </div>
+            </div>
+
+            <!-- Navigation Links (Shown only when Logged In) -->
+            <nav id="navLinks" class="nav-links hidden">
+                <!-- User Links -->
+                <button class="nav-btn active" id="navSlots" onclick="navigateTo('slots')">🅿️ Available Slots</button>
+                <button class="nav-btn" id="navMyBookings" onclick="navigateTo('my-bookings')">📋 My Bookings</button>
+
+                <!-- Admin Links -->
+                <button class="nav-btn" id="navAdmin" onclick="navigateTo('admin')" style="display: none;">🛡️ Admin Operations</button>
+            </nav>
+
+            <!-- User Menu -->
+            <div class="user-menu" id="userMenu">
+                <div id="loggedOutState">
+                    <button class="btn btn-sm btn-secondary" onclick="showAuthLanding('login')">Sign In</button>
+                    <button class="btn btn-sm btn-primary" onclick="showAuthLanding('register')">Register</button>
+                </div>
+                <div id="loggedInState" class="user-pill-container hidden">
+                    <div class="user-badge" id="userBadge">
+                        <span id="userRoleTag" class="role-tag user">USER</span>
+                        <span id="userDisplayName" class="user-name">John Doe</span>
+                    </div>
+                    <button class="btn btn-sm btn-secondary" onclick="logout()">Logout</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-container">
+
+        <!-- 0. STARTING LOGIN / REGISTRATION LANDING VIEW -->
+        <section id="viewAuthLanding" class="view-section">
+            <div class="welcome-landing-container">
+                <div class="welcome-card-wrapper">
+                    <div class="welcome-header">
+                        <div class="welcome-logo-badge">🅿️</div>
+                        <h1>Welcome to ParkFlow</h1>
+                        <p>Sign in to your account or register to manage parking slots</p>
+                    </div>
+
+                    <!-- Auth Tabs -->
+                    <div class="auth-tabs-container">
+                        <button id="tabAuthLogin" class="auth-tab-btn active" onclick="switchLandingAuthTab('login')">Sign In</button>
+                        <button id="tabAuthRegister" class="auth-tab-btn" onclick="switchLandingAuthTab('register')">New User Register</button>
+                    </div>
+
+                    <!-- 0A. Login Form -->
+                    <div id="landingLoginForm">
+                        <form onsubmit="handleLoginSubmit(event)">
+                            <div class="form-group">
+                                <label for="loginUsername">Username</label>
+                                <input type="text" id="loginUsername" placeholder="e.g. user1 or admin" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="loginPassword">Password</label>
+                                <input type="password" id="loginPassword" placeholder="e.g. user123 or admin123" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+                        </form>
+
+                        <div class="divider"><span>1-Click Demo Login</span></div>
+
+                        <div class="quick-demo-section">
+                            <span class="quick-demo-title">Select a demo role for instant testing:</span>
+                            <div class="quick-login-grid">
+                                <button class="btn btn-demo-user" onclick="quickLogin('user1', 'user123')">👤 User 1 (John)</button>
+                                <button class="btn btn-demo-user" onclick="quickLogin('user2', 'user123')">👤 User 2 (Jane)</button>
+                                <button class="btn btn-demo-admin" onclick="quickLogin('admin', 'admin123')">🛡️ Admin (System)</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 0B. Register Form -->
+                    <div id="landingRegisterForm" class="hidden">
+                        <form onsubmit="handleRegisterSubmit(event)">
+                            <div class="form-group">
+                                <label for="regFullName">Full Name *</label>
+                                <input type="text" id="regFullName" placeholder="e.g. Robert Williams" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="regUsername">Username *</label>
+                                <input type="text" id="regUsername" placeholder="e.g. robert99" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="regPhone">Mobile Phone (10 digits) *</label>
+                                <input type="tel" id="regPhone" placeholder="10-digit number e.g. 9876543210" pattern="[0-9]{10}" maxlength="10" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="regPassword">Password (min 4 characters) *</label>
+                                <input type="password" id="regPassword" placeholder="Create your password" minlength="4" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block">Register & Sign In</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 1. SLOTS SEARCH & BOOKING VIEW (FOR USERS) -->
+        <section id="viewSlots" class="view-section hidden">
+            <div class="section-header">
+                <div>
+                    <h1 class="page-title">Find & Reserve Parking Slots</h1>
+                    <p class="page-subtitle">Real-time availability, clear hourly rates, and instant reservations.</p>
+                </div>
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="slotSearchInput" placeholder="Search by Slot ID, name, category..." oninput="handleSlotSearch()">
+                    <button class="btn btn-sm btn-secondary" onclick="refreshSlots()">Refresh</button>
+                </div>
+            </div>
+
+            <!-- Slots Grid -->
+            <div id="slotsGrid" class="slots-grid">
+                <!-- Slot cards injected via JS -->
+            </div>
+        </section>
+
+        <!-- 2. MY BOOKINGS VIEW (FOR USERS) -->
+        <section id="viewMyBookings" class="view-section hidden">
+            <div class="section-header">
+                <div>
+                    <h1 class="page-title">My Parking Reservations</h1>
+                    <p class="page-subtitle">View active passes, audit history, and manage cancellations.</p>
+                </div>
+                <button class="btn btn-secondary" onclick="loadMyBookings()">🔄 Refresh Bookings</button>
+            </div>
+
+            <div class="card table-card">
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Booking Ref</th>
+                                <th>Slot Snapshot</th>
+                                <th>Quantity</th>
+                                <th>Vehicle No</th>
+                                <th>Date</th>
+                                <th>Base Amt</th>
+                                <th>Booking Charge</th>
+                                <th>Grand Total</th>
+                                <th>Status</th>
+                                <th class="text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="myBookingsTableBody">
+                            <!-- Rows injected via JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="myBookingsEmpty" class="empty-state hidden">
+                    <p>No bookings found yet. Go ahead and reserve a parking slot!</p>
+                    <button class="btn btn-primary" onclick="navigateTo('slots')">Browse Slots</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. ADMIN DASHBOARD VIEW (FOR ADMIN ONLY) -->
+        <section id="viewAdmin" class="view-section hidden">
+            <div class="section-header">
+                <div>
+                    <h1 class="page-title">Admin Operations Center</h1>
+                    <p class="page-subtitle">Manage reservations, enforce sequential status flow, and monitor live slot capacity.</p>
+                </div>
+                <button class="btn btn-secondary" onclick="loadAdminDashboard()">🔄 Refresh Center</button>
+            </div>
+
+            <!-- Admin Stats Metric Cards -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <span class="metric-label">Total Bookings</span>
+                    <span class="metric-value" id="statTotal">0</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-label">Confirmed (Awaiting In)</span>
+                    <span class="metric-value color-primary" id="statConfirmed">0</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-label">Checked-In Active</span>
+                    <span class="metric-value color-warning" id="statCheckedIn">0</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-label">Completed Sessions</span>
+                    <span class="metric-value color-success" id="statCompleted">0</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-label">Total Revenue</span>
+                    <span class="metric-value" id="statRevenue">₹0.00</span>
+                </div>
+            </div>
+
+            <!-- Admin Tabs -->
+            <div class="admin-tabs">
+                <button class="tab-btn active" id="tabAdminReservations" onclick="switchAdminTab('reservations')">📑 All Bookings & Status Transitions</button>
+                <button class="tab-btn" id="tabAdminSlots" onclick="switchAdminTab('slots')">🅿️ Live Slot Inventory</button>
+            </div>
+
+            <!-- Admin Panel 1: Master Reservations Table -->
+            <div id="adminPanelReservations" class="card table-card">
+                <div class="table-filter-bar">
+                    <div class="filter-group">
+                        <label for="adminStatusFilter">Filter Status:</label>
+                        <select id="adminStatusFilter" onchange="filterAdminBookings()">
+                            <option value="ALL">All Statuses</option>
+                            <option value="CONFIRMED">CONFIRMED</option>
+                            <option value="CHECKED_IN">CHECKED_IN</option>
+                            <option value="COMPLETED">COMPLETED</option>
+                            <option value="CANCELLED">CANCELLED</option>
+                        </select>
+                    </div>
+                    <div class="filter-group flex-1">
+                        <input type="text" id="adminSearchInput" placeholder="Filter by Ref, Customer Name, Vehicle..." oninput="filterAdminBookings()">
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Ref</th>
+                                <th>Customer Name</th>
+                                <th>Phone</th>
+                                <th>Vehicle No</th>
+                                <th>Slot Snapshot</th>
+                                <th>Qty</th>
+                                <th>Date</th>
+                                <th>Grand Total</th>
+                                <th>Current Status</th>
+                                <th class="text-right">Advance Status / Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminBookingsTableBody">
+                            <!-- Rows injected via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Admin Panel 2: Live Slot Capacity Grid -->
+            <div id="adminPanelSlots" class="card table-card hidden">
+                <form id="adminSlotForm" class="admin-slot-form" onsubmit="saveAdminSpot(event)">
+                    <h2 id="adminSlotFormTitle">Add a Parking Spot</h2>
+                    <input type="hidden" id="adminSpotId">
+                    <div class="admin-slot-fields">
+                        <div class="form-group">
+                            <label for="adminSpotIdentifier">Spot Identifier</label>
+                            <input type="text" id="adminSpotIdentifier" maxlength="30" required placeholder="e.g. R106">
+                        </div>
+                        <div class="form-group">
+                            <label for="adminSpotName">Spot Name</label>
+                            <input type="text" id="adminSpotName" maxlength="100" required placeholder="e.g. Parking Slot F">
+                        </div>
+                        <div class="form-group">
+                            <label for="adminSpotSchedule">Category & Schedule</label>
+                            <select id="adminSpotSchedule" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="adminSpotRate">Rate per Spot (₹)</label>
+                            <input type="number" id="adminSpotRate" min="0" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="adminSpotCapacity">Total Capacity</label>
+                            <input type="number" id="adminSpotCapacity" min="1" step="1" required>
+                        </div>
+                        <label class="admin-spot-active">
+                            <input type="checkbox" id="adminSpotActive" checked>
+                            Available for booking
+                        </label>
+                    </div>
+                    <div class="admin-slot-form-actions">
+                        <button type="submit" class="btn btn-primary" id="adminSpotSubmit">Add Spot</button>
+                        <button type="button" class="btn btn-secondary hidden" id="adminSpotCancel" onclick="resetAdminSpotForm()">Cancel Edit</button>
+                    </div>
+                </form>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Identifier</th>
+                                <th>Slot Name</th>
+                                <th>Category & Operating Hours</th>
+                                <th>Rate (₹)</th>
+                                <th>Total Capacity</th>
+                                <th>Available Spots</th>
+                                <th>Occupied</th>
+                                <th>Occupancy Rate</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminSlotsTableBody">
+                            <!-- Rows injected via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ================= MODALS ================= -->
+
+    <!-- 1. BOOKING MODAL -->
+    <div id="bookingModal" class="modal-overlay hidden">
+        <div class="modal-dialog">
+            <button class="modal-close" onclick="closeBookingModal()">✕</button>
+            <div class="modal-header">
+                <h2>Reserve Parking Slot</h2>
+                <p>Select quantity (1–5) and confirm customer & vehicle details</p>
+            </div>
+
+            <!-- Selected Slot Preview -->
+            <div class="slot-preview-card" id="bookingSlotPreview">
+                <!-- Injected via JS -->
+            </div>
+
+            <form id="bookingForm" onsubmit="handleBookingSubmit(event)">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="bookingQuantity">Quantity (1 - 5 Slots Only) *</label>
+                        <select id="bookingQuantity" onchange="calculateLiveFee()" required>
+                            <option value="1">1 Slot</option>
+                            <option value="2">2 Slots</option>
+                            <option value="3">3 Slots</option>
+                            <option value="4">4 Slots</option>
+                            <option value="5">5 Slots</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="bookingDate">Booking Date *</label>
+                        <input type="date" id="bookingDate" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="bookingCustomerName">Customer Full Name *</label>
+                    <input type="text" id="bookingCustomerName" required>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="bookingPhone">Phone (10 digits) *</label>
+                        <input type="tel" id="bookingPhone" pattern="[0-9]{10}" maxlength="10" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="bookingVehicle">Vehicle Number *</label>
+                        <input type="text" id="bookingVehicle" placeholder="e.g. DL-01-AB-1234" required>
+                    </div>
+                </div>
+
+                <!-- Live Fee Calculation Card -->
+                <div class="price-breakdown-card">
+                    <div class="price-row">
+                        <span>Base Amount (<span id="calcFormula">1 × ₹0</span>):</span>
+                        <strong id="calcBaseAmount">₹0.00</strong>
+                    </div>
+                    <div class="price-row">
+                        <span>Booking Charge:</span>
+                        <strong id="calcBookingCharge">₹0.00</strong>
+                    </div>
+                    <div class="price-note" id="calcChargeNote">₹50 charge if base &lt; ₹1000, else ₹0</div>
+                    <hr class="price-divider">
+                    <div class="price-row grand-total">
+                        <span>Grand Total:</span>
+                        <span class="total-amount" id="calcGrandTotal">₹0.00</span>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeBookingModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btnConfirmBooking">Confirm & Pay</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. RECEIPT / PASS MODAL -->
+    <div id="receiptModal" class="modal-overlay hidden">
+        <div class="modal-dialog receipt-dialog">
+            <button class="modal-close" onclick="closeReceiptModal()">✕</button>
+            <div class="receipt-card" id="receiptPrintArea">
+                <div class="receipt-header">
+                    <div class="receipt-brand">🅿️ Park<span>Flow</span> System</div>
+                    <div class="receipt-title">OFFICIAL PARKING PASS & RECEIPT</div>
+                    <div class="receipt-date" id="receiptCreatedAt">Created: -</div>
+                </div>
+
+                <div class="receipt-badge-row">
+                    <span class="receipt-ref" id="receiptRef">PK-XXXXXXXX-XXXX</span>
+                    <span class="status-badge" id="receiptStatus">CONFIRMED</span>
+                </div>
+
+                <div class="receipt-grid">
+                    <div>
+                        <span class="receipt-label">Customer Name</span>
+                        <span class="receipt-val" id="receiptCustomerName">-</span>
+                    </div>
+                    <div>
+                        <span class="receipt-label">Phone</span>
+                        <span class="receipt-val" id="receiptPhone">-</span>
+                    </div>
+                    <div>
+                        <span class="receipt-label">Vehicle Number</span>
+                        <span class="receipt-val" id="receiptVehicle">-</span>
+                    </div>
+                    <div>
+                        <span class="receipt-label">Booking Date</span>
+                        <span class="receipt-val" id="receiptDate">-</span>
+                    </div>
+                </div>
+
+                <div class="receipt-items">
+                    <div class="receipt-items-header">Reserved Parking Slot (Rate Snapshot)</div>
+                    <div id="receiptItemsList">
+                        <!-- Items injected via JS -->
+                    </div>
+                </div>
+
+                <div class="receipt-summary">
+                    <div class="receipt-sum-row">
+                        <span>Base Amount:</span>
+                        <span id="receiptBaseAmount">₹0.00</span>
+                    </div>
+                    <div class="receipt-sum-row">
+                        <span>Booking Charge:</span>
+                        <span id="receiptBookingCharge">₹0.00</span>
+                    </div>
+                    <div class="receipt-sum-row grand">
+                        <span>Grand Total Paid:</span>
+                        <span id="receiptGrandTotal">₹0.00</span>
+                    </div>
+                </div>
+
+                <div class="receipt-footer">
+                    <p>Present this digital pass upon arrival at the parking gate.</p>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="window.print()">🖨️ Print Pass</button>
+                <button class="btn btn-primary" onclick="closeReceiptModal()">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. AUDIT TRAIL / STATUS HISTORY MODAL -->
+    <div id="historyModal" class="modal-overlay hidden">
+        <div class="modal-dialog">
+            <button class="modal-close" onclick="closeHistoryModal()">✕</button>
+            <div class="modal-header">
+                <h2>Status Transition Audit Trail</h2>
+                <p id="historySubtitle">Booking Reference: PK-XXXX</p>
+            </div>
+
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Previous Status</th>
+                            <th>New Status</th>
+                            <th>Changed By</th>
+                            <th>Role</th>
+                            <th>Timestamp</th>
+                            <th>Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                        <!-- History rows injected via JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-primary" onclick="closeHistoryModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
